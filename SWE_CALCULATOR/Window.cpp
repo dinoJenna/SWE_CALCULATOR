@@ -1,140 +1,180 @@
 #include "Window.h"
 #include "ButtonFactory.h"
 #include "wx/tokenzr.h"
-#include "wx/sizer.h"
 #include <cmath>
-#include <stdexcept>
 
 
 wxBEGIN_EVENT_TABLE(Window, wxFrame)
-EVT_BUTTON(wxID_ANY, Window::OnButtonClicked)
+    EVT_BUTTON(wxID_ANY, Window::OnButtonClicked)
 wxEND_EVENT_TABLE()
 
 
-Window::Window() : wxFrame(nullptr, wxID_ANY, "swe calculator", wxPoint(30, 30), wxSize(450, 550))
+Window::Window() : wxFrame(nullptr, wxID_ANY, "swe calculator", wxDefaultPosition, wxSize(450, 500))
 {
-    display = new wxTextCtrl(this, wxID_ANY, "", wxPoint(10, 10), wxSize(380, 40));
-
-    int buttonWidth = 70;
-    int buttonHeight = 50;
-    int colSpace = 10;
-    int rowSpace = 50;
-
-    //number buttons
-    for (int i = 0; i < 10; i++) {
-        int col = colSpace + (i % 3) * (buttonWidth + 10);
-        int row = rowSpace + (3 - i / 3) * (buttonHeight + 10);
-        if (i == 0) {
-            col = colSpace + buttonWidth + 10;
-            row = rowSpace + 4 * (buttonHeight + 10);
-        }
-        numButtons[i] = ButtonFactory::CreateButton(this, wxString::Format("%d", i), wxPoint(col, row), wxSize(buttonWidth, buttonHeight));
-    }
-
-    //binary buttons
-    wxString bin[] = { "+", "-", "*", "/","%" };
-    for (int i = 0; i < 5; i++) {
-        binButtons[i] = ButtonFactory::CreateButton(this, bin[i], wxPoint(colSpace + 3 * (buttonWidth + 10), rowSpace + i * (buttonHeight + 10)), wxSize(buttonWidth, buttonHeight));
-    }
-
-    //unary buttons
-    wxString unary[] = { "sin", "cos", "tan" };
-    for (int i = 0; i < 3; i++) {
-		unaryButtons[i] = ButtonFactory::CreateButton(this, unary[i], wxPoint(colSpace + 4 * (buttonWidth + 10), rowSpace + i * (buttonHeight + 10)), wxSize(buttonWidth, buttonHeight));
-	}
-
-    //other buttons
-    eqlButton = ButtonFactory::CreateButton(this, "=", wxPoint(colSpace + 2 * (buttonWidth + 10), rowSpace + 4 * (buttonHeight + 10)), wxSize(buttonWidth, buttonHeight));
-    clrButton = ButtonFactory::CreateButton(this, "C", wxPoint(colSpace + 4 * (buttonWidth + 10), rowSpace + 3 * (buttonHeight + 10)), wxSize(buttonWidth, buttonHeight));
-    delButton = ButtonFactory::CreateButton(this, "DEL", wxPoint(colSpace + 4 * (buttonWidth + 10), rowSpace + 4 * (buttonHeight + 10)), wxSize(buttonWidth, buttonHeight));
-    decButton = ButtonFactory::CreateButton(this, ".", wxPoint(colSpace + 2 * (buttonWidth + 10), rowSpace + 3 * (buttonHeight + 10)), wxSize(buttonWidth, buttonHeight));
-    negButton = ButtonFactory::CreateButton(this, "+/-", wxPoint(colSpace, rowSpace + 4 * (buttonHeight + 10)), wxSize(buttonWidth, buttonHeight));
-
+    CreateUI();
+    this->SetMinSize(wxSize(450, 500));
 }
 
-//on button clicked event handler
+//creating calculator display
+void Window::CreateUI() {
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+    display = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, 50), wxTE_RIGHT);
+    mainSizer->Add(display, 0, wxEXPAND | wxALL, 10);
+
+    wxGridSizer* buttonSizer = new wxGridSizer(5, 5, 5);
+    
+    buttonSizer->Add(ButtonFactory::CreateOpButton(this, "%"), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateFnctnButton(this, "sin"), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateFnctnButton(this, "cos"), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateFnctnButton(this, "tan"), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateButton(this, "C"), 0, wxEXPAND);
+
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 7), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 8), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 9), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateOpButton(this, "*"), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateOpButton(this, "/"), 0, wxEXPAND);
+
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 4), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 5), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 6), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateButton(this, "DEL"), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateOpButton(this, "-"), 0, wxEXPAND);
+
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 1), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 2), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 3), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateOpButton(this, "+"), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateButton(this, "="), 0, wxEXPAND);
+
+    buttonSizer->Add(ButtonFactory::CreateNumButton(this, 0), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateButton(this, "."), 0, wxEXPAND);
+    buttonSizer->Add(ButtonFactory::CreateButton(this, "+/-"), 0, wxEXPAND);
+    
+    mainSizer->Add(buttonSizer, 1, wxEXPAND | wxALL, 10);
+
+    SetSizer(mainSizer);
+}
+
 void Window::OnButtonClicked(wxCommandEvent& evt) {
-    wxButton* clickedButton = (wxButton*)evt.GetEventObject();
-    if (clickedButton) {
-        wxString label = clickedButton->GetLabel();
-        wxString showValue = display->GetValue();
-        //try/catch block to handle exceptions
-        try {
-            if (label >= "0" && label <= "9") {
-                display->AppendText(label);
+    wxButton* button = wxDynamicCast(evt.GetEventObject(), wxButton);
+    if (button) {
+        wxString label = button->GetLabel();
+        wxString currentTxt = display->GetValue();
+
+        if (label >= "0" && label <= "9" || label == ".") {
+            display->AppendText(label);
+        }
+        else if (label == "-" || label == "/" || label == "*" || label == "+" || label == "%") {
+            if ((isOperator(label) && currentTxt.EndsWith(label)) || (label == "." && currentTxt.Contains("."))) {
+                return;
             }
-            else if (label == "." && showValue.Find('.') == wxNOT_FOUND) {
-                display->AppendText(label);
+            display->AppendText(" " + label + " ");
+        }
+        else if (label == "+/-") {
+            if (!currentTxt.IsEmpty()) {
+                if (currentTxt[0] == '-')
+                    display->SetValue(currentTxt.Mid(1));
+                else
+                    display->SetValue("-" + currentTxt);
             }
-            else if (label == "C") {
-                display->Clear();
+        }
+        else if (label == "sin" || label == "cos" || label == "tan") {
+            display->AppendText(label + " ");
+        }
+        else if (label == "C") {
+            display->Clear();
+        }
+        else if (label == "DEL") {
+            if (!currentTxt.IsEmpty()) {
+                display->SetValue(currentTxt.RemoveLast());
             }
-            else if (label == "DEL") {
-                if (!showValue.IsEmpty()) {
-                    display->SetValue(showValue.RemoveLast());
+        }
+        else if (label == "=") {
+            if (!currentTxt.IsEmpty()) {
+                try {
+                    if (isValidExpression(currentTxt)) 
+                    {
+                        double result = Calculate(currentTxt);
+                        display->SetValue(wxString::Format("%.6f", result));
+                    }
+                    else {
+                        display->SetValue("Invalid expression");
+                    }
+                }
+                catch (const std::exception e) {
+                    display->SetValue("Error: " + wxString(e.what()));
                 }
             }
-            else if (label == "+" || label == "-" || label == "*" || label == "/" || label == "%") {
-                display->AppendText(" " + label + " ");
-            }
-            else if (label == "sin" || label == "cos" || label == "tan") {
-                display->SetValue(label + "(" + showValue + ")");
-            }
-            else if (label == "=") {
-                double result = Calculate(showValue);
-                display->SetValue(wxString::Format("%g", result));
-            }
-        } 
-        catch (const std::exception& exception) {
-			display->SetValue("Error");
-		}
+        }
     }
 }
 
-//this concept was a doozy/discord and wxWidgets/tokenizing documentation ftw
-//calculates the result of an expression using the shunting yard algorithm
-double Window::Calculate(const wxString& expression)
-{
-    wxStringTokenizer tokenizer(expression, " ");
-    std::vector<wxString> tokens;
-    while (tokenizer.HasMoreTokens()) {
-		tokens.push_back(tokenizer.GetNextToken());
-	}
-    //handle unary operators
-    if (tokens.size() == 1) {
-        if (tokens[0].StartsWith("sin(")) {
-            double val = std::stod(tokens[0].Mid(4, tokens[0].length() - 5).ToStdString());
-            return std::sin(val);
-        }
-        else if (tokens[0].StartsWith("cos(")) {
-            double val = std::stod(tokens[0].Mid(4, tokens[0].length() - 5).ToStdString());
-            return std::cos(val);
-        }
-        else if (tokens[0].StartsWith("tan(")) {
-            double val = std::stod(tokens[0].Mid(4, tokens[0].length() - 5).ToStdString());
-            return std::tan(val);
-        }
-        return std::stod(tokens[0].ToStdString());
+//helper functions for exception handling
+bool Window::isOperator(const wxString& token) {
+    return token == "+" || token == "-" || token == "*" || token == "/" || token == "%";
+}
+bool Window::isValidExpression(const wxString& expression) {
+    if (expression.IsEmpty() || isOperator(expression[0]) || isOperator(expression.Last())) {
+        return false;
     }
-    //handle binary operators
-    else if (tokens.size() == 3) {
-        double left = std::stod(tokens[0].ToStdString());
-        double right = std::stod(tokens[2].ToStdString());
-        wxString op = tokens[1];
+    for (size_t i = 1; i < expression.Length(); ++i) {
+        if (isOperator(expression[i]) && isOperator(expression[i - 1])) {
+            return false;
+        }
+    }
+    int decimal = 0;
+    for (size_t i = 0; i < expression.Length(); ++i) {
+        if (expression[i] == '.') {
+            decimal++;
+        }
+        else if (isOperator(expression[i])) {
+            decimal = 0;
+        }
+        if (decimal > 1) {
+            return false;
+        }
+    }
+    return true;
+}
 
-        if (op == "+") return left + right;
-        if (op == "-") return left - right;
-        if (op == "*") return left * right;
-        //handle division by 0
-        if (op == "/") {
-            if (right == 0) throw std::exception("Division by zero");
-			return left / right;
-        }
-        //handle mod by 0
-        if (op == "%") {
-            if (right == 0) throw std::runtime_error("Modulo by zero");
-            return std::fmod(left, right);
-        }
+double Window::Calculate(const wxString& expression) {
+    wxStringTokenizer tokenizer(expression, " ");
+
+    if (!tokenizer.HasMoreTokens())
+        throw std::runtime_error("Empty expression");
+
+    wxString token = tokenizer.GetNextToken();
+
+    if (token == "sin" || token == "cos" || token == "tan") {
+        double val = wxAtof(tokenizer.GetNextToken());
+        if (token == "sin") return std::sin(val);
+        if (token == "cos") return std::cos(val);
+        if (token == "tan") return std::tan(val);
     }
-    throw std::runtime_error("Invalid expression, try again");
+
+    double left = wxAtof(token);
+
+    if (!tokenizer.HasMoreTokens())
+        return left;
+
+    token = tokenizer.GetNextToken();
+
+    if (!tokenizer.HasMoreTokens())
+        throw std::runtime_error("Operator missing second operand");
+
+    double right = wxAtof(tokenizer.GetNextToken());
+
+    if (token == "+") return left + right;
+    if (token == "-") return left - right;
+    if (token == "*") return left * right;
+    if (token == "/") {
+        if (right == 0) throw std::runtime_error("Division by zero");
+        return left / right;
+    }
+    if (token == "%") {
+        if (right == 0) throw std::runtime_error("Mod by zero");
+        return std::fmod(left, right);
+    }
+    throw std::runtime_error("Invalid operation");
 }
