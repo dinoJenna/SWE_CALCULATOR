@@ -1,7 +1,9 @@
 #include "Window.h"
 #include "ButtonFactory.h"
+#include "CalculatorProcessor.h"
 #include "wx/tokenzr.h"
 #include <cmath>
+#include <stdexcept>
 
 
 wxBEGIN_EVENT_TABLE(Window, wxFrame)
@@ -65,10 +67,7 @@ void Window::OnButtonClicked(wxCommandEvent& evt) {
         if (label >= "0" && label <= "9" || label == ".") {
             display->AppendText(label);
         }
-        else if (label == "-" || label == "/" || label == "*" || label == "+" || label == "%") {
-            if ((isOperator(label) && currentTxt.EndsWith(label)) || (label == "." && currentTxt.Contains("."))) {
-                return;
-            }
+        else if (label == "+" || label == "-" || label == "*" || label == "/" || label == "%") {
             display->AppendText(" " + label + " ");
         }
         else if (label == "+/-") {
@@ -93,14 +92,8 @@ void Window::OnButtonClicked(wxCommandEvent& evt) {
         else if (label == "=") {
             if (!currentTxt.IsEmpty()) {
                 try {
-                    if (isValidExpression(currentTxt)) 
-                    {
-                        double result = Calculate(currentTxt);
+                        double result = Singleton::Instance()->Calculate(currentTxt);
                         display->SetValue(wxString::Format("%.6f", result));
-                    }
-                    else {
-                        display->SetValue("Invalid expression");
-                    }
                 }
                 catch (const std::exception e) {
                     display->SetValue("Error: " + wxString(e.what()));
@@ -110,71 +103,4 @@ void Window::OnButtonClicked(wxCommandEvent& evt) {
     }
 }
 
-//helper functions for exception handling
-bool Window::isOperator(const wxString& token) {
-    return token == "+" || token == "-" || token == "*" || token == "/" || token == "%";
-}
-bool Window::isValidExpression(const wxString& expression) {
-    if (expression.IsEmpty() || isOperator(expression[0]) || isOperator(expression.Last())) {
-        return false;
-    }
-    for (size_t i = 1; i < expression.Length(); ++i) {
-        if (isOperator(expression[i]) && isOperator(expression[i - 1])) {
-            return false;
-        }
-    }
-    int decimal = 0;
-    for (size_t i = 0; i < expression.Length(); ++i) {
-        if (expression[i] == '.') {
-            decimal++;
-        }
-        else if (isOperator(expression[i])) {
-            decimal = 0;
-        }
-        if (decimal > 1) {
-            return false;
-        }
-    }
-    return true;
-}
 
-double Window::Calculate(const wxString& expression) {
-    wxStringTokenizer tokenizer(expression, " ");
-
-    if (!tokenizer.HasMoreTokens())
-        throw std::runtime_error("Empty expression");
-
-    wxString token = tokenizer.GetNextToken();
-
-    if (token == "sin" || token == "cos" || token == "tan") {
-        double val = wxAtof(tokenizer.GetNextToken());
-        if (token == "sin") return std::sin(val);
-        if (token == "cos") return std::cos(val);
-        if (token == "tan") return std::tan(val);
-    }
-
-    double left = wxAtof(token);
-
-    if (!tokenizer.HasMoreTokens())
-        return left;
-
-    token = tokenizer.GetNextToken();
-
-    if (!tokenizer.HasMoreTokens())
-        throw std::runtime_error("Operator missing second operand");
-
-    double right = wxAtof(tokenizer.GetNextToken());
-
-    if (token == "+") return left + right;
-    if (token == "-") return left - right;
-    if (token == "*") return left * right;
-    if (token == "/") {
-        if (right == 0) throw std::runtime_error("Division by zero");
-        return left / right;
-    }
-    if (token == "%") {
-        if (right == 0) throw std::runtime_error("Mod by zero");
-        return std::fmod(left, right);
-    }
-    throw std::runtime_error("Invalid operation");
-}
