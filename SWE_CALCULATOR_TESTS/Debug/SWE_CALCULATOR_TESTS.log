@@ -1,0 +1,5 @@
+﻿  ButtonFactoryTests.cpp
+C:\Users\Jenna\source\repos\calculator\SWE_CALCULATOR_TESTS\ButtonFactoryTests.cpp(106,1): error C1010: unexpected end of file while looking for precompiled header. Did you forget to add '#include "pch.h"' to your source?
+  CalculatorProcessorTests.cpp
+C:\Users\Jenna\source\repos\calculator\SWE_CALCULATOR_TESTS\CalculatorProcessorTests.cpp(74,1): error C1010: unexpected end of file while looking for precompiled header. Did you forget to add '#include "pch.h"' to your source?
+  Generating Code...
